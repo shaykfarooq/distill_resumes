@@ -9,7 +9,7 @@ The CV Analysis System is a powerful tool designed to process multiple CV docume
 - **Python 3.12** (Conda environment)
 - **Django 5.1** (Web framework)
 - **Tesseract OCR (`pytesseract`)** (Text extraction)
-- **OpenAI GPT API** (LLM integration)
+- **OpenRouter API** (LLM integration)
 - **PostgreSQL** (Database)
 - **Celery & Redis** (Asynchronous processing)
 - **Django REST Framework** (API)
