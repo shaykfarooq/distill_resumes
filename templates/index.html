@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat UI with File Upload</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .chat-container { height:100vh; }
+        .chat-box { height: 100%; overflow-y: auto; padding: 15px; }
+        .chat-input { position: relative; }
+        .chat-input input { padding-right: 50px; }
+        .upload-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+        .sidebar { height: 100%; background: #343a40; color: white; }
+        .sidebar a { color: white; text-decoration: none; padding: 10px; display: block; }
+        .sidebar a:hover { background: #495057; }
+        .message { max-width: 75%; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+        .user-message { background: #007bff; color: white; align-self: flex-end; }
+        .bot-message { background: #e9ecef; color: black; align-self: flex-start; }
+
+        #chatBox{
+            height: 80vh !important;
+            overflow-y: scroll !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row chat-container">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar p-3">
+            <label for="modelSelect" class="form-label">Select a Model:</label>
+            <select id="modelSelect" class="form-select">
+                <option selected>deepseek/deepseek-r1:free</option>
+                <option>google/gemini-2.0-pro-exp-02-05:free</option>
+                <option>google/gemini-2.0-flash-exp:free</option>
+                <option>google/gemini-2.0-flash-lite-preview-02-05:free</option>
+                <option>meta-llama/llama-3.3-70b-instruct:free</option>
+                <option>deepseek/deepseek-r1-distill-llama-70b:free</option>
+                <option>google/gemini-exp-1206:free</option>
+                <option>nvidia/llama-3.1-nemotron-70b-instruct:free</option>
+                <option>google/gemini-2.0-flash-thinking-exp-1219:free</option>
+                <option>qwen/qwen2.5-vl-72b-instruct:free</option>
+                <option>google/gemma-2-9b-it:free</option>
+                <option>cognitivecomputations/dolphin3.0-r1-mistral-24b:free</option>
+                <option>sophosympatheia/rogue-rose-103b-v0.2:free</option>
+                <option>mistralai/mistral-nemo:free</option>
+                <option>cognitivecomputations/dolphin3.0-mistral-24b:free</option>
+                <option>mistralai/mistral-small-24b-instruct-2501:free</option>
+                <option>mistralai/mistral-7b-instruct:free</option>
+                <option>qwen/qwen-vl-plus:free</option>
+                <option>google/learnlm-1.5-pro-experimental:free</option>
+                <option>meta-llama/llama-3-8b-instruct:free</option>
+                <option>meta-llama/llama-3.2-11b-vision-instruct:free</option>
+                <option>openchat/openchat-7b:free</option>
+                <option>google/gemini-flash-1.5-8b-exp</option>
+                <option>undi95/toppy-m-7b:free</option>
+                <option>gryphe/mythomax-l2-13b:free</option>
+                <option>meta-llama/llama-3.1-8b-instruct:free</option>
+                <option>microsoft/phi-3-medium-128k-instruct:free</option>
+                <option>meta-llama/llama-3.2-1b-instruct:free</option>
+                <option>microsoft/phi-3-mini-128k-instruct:free</option>
+                <option>huggingfaceh4/zephyr-7b-beta:free</option>
+                <option>google/gemini-2.0-flash-thinking-exp:free</option>
+                <option>deepseek/deepseek-chat:free</option>
+            </select>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#resumesModal">Uploaded Resumes</a>
+
+            <!-- Resumes Modal -->
+            <div class="modal fade" id="resumesModal" tabindex="-1" aria-labelledby="resumesModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="resumesModalLabel">Uploaded Resumes</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click();">
+                                Upload Resume
+                            </button>
+                            <table class="table table-striped table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Candidate Name</th>
+                                        <th scope="col">Resume</th>
+                                        <th scope="col">Download</th>
+                                        <th scope="col">Uploaded</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resumesTableBody">
+                                    <!-- Dynamic content will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.querySelector('[data-bs-target="#resumesModal"]').addEventListener('click', function () {
+                    fetch('/api/get-resumes')
+                        .then(response => response.json())
+                        .then(data => {
+                            let resumesTableBody = document.getElementById('resumesTableBody');
+                            resumesTableBody.innerHTML = '';
+                            data.forEach(resume => {
+                                let row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${resume.candidateName}</td>
+                                    <td>${resume.fileName}</td>
+                                    <td><a href="${resume.downloadUrl}" class="btn btn-primary btn-sm" download>Download</a></td>
+                                    <td>${resume.uploaded}</td>
+                                `;
+                                resumesTableBody.appendChild(row);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error fetching resumes:', error);
+                        });
+                });
+            </script>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-9 col-lg-10 d-flex flex-column">
+            <div class="chat-box d-flex flex-column flex-grow-1" id="chatBox">
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input p-3 bg-white">
+                <div class="input-group">
+                    <input type="text" id="userInput" class="form-control" placeholder="Type your message...">
+                    <button class="btn btn-warning" onclick="refreshPage()">Refresh</button> <!-- Refresh Button -->
+                    <input type="file" id="fileInput" multiple class="d-none" accept=".pdf,.docx">
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 99999">
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+    window.addEventListener("load", function () {
+        fetch("/api/get-chat-history")
+            .then(response => response.json())
+            .then(data => {
+                let chatBox = document.getElementById("chatBox");
+                data.forEach(message => {
+                    let messageDivUser = document.createElement("div");
+                    let messageDivResp = document.createElement("div");
+                    let timestampDiv = document.createElement("div");
+                    
+                    messageDivUser.className = `message user-message`;
+                    messageDivResp.className = `message bot-message`;
+                    timestampDiv.className = `text-muted small`;
+
+                    messageDivUser.textContent = message.prompt;
+                    messageDivResp.innerHTML = message.response;
+                    timestampDiv.textContent = message.timestamp;
+
+                    chatBox.appendChild(messageDivUser);
+                    chatBox.appendChild(messageDivResp);
+                    chatBox.appendChild(timestampDiv);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            })
+            .catch(error => {
+                console.error("Error fetching chat history:", error);
+            });
+    });
+
+
+    function showLoaderFullScreen(textContent = "Loading, please wait...") {
+        let loader = document.createElement("div");
+        loader.className = "loader";
+        loader.style.position = "fixed";
+        loader.style.top = "0";
+        loader.style.left = "0";
+        loader.style.width = "100%";
+        loader.style.height = "100%";
+        loader.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
+        loader.style.zIndex = "9999";
+        loader.innerHTML = `<div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>`;
+        let loadingText = document.createElement("div");
+        loadingText.style.position = "fixed";
+        loadingText.style.top = "45%";
+        loadingText.style.left = "50%";
+        loadingText.style.transform = "translate(-50%, -50%)";
+        loadingText.style.zIndex = "10000";
+        loadingText.style.fontSize = "1.5rem";
+        loadingText.style.color = "#007bff";
+        loadingText.textContent = textContent;
+        loader.appendChild(loadingText);
+        document.body.appendChild(loader);
+    }
+
+    function hideLoaderFullScreen(){
+        let loader = document.querySelector(".loader");
+        if(loader){
+            loader.remove();
+        }
+    }
+
+    document.getElementById("fileInput").addEventListener("change", function () {
+        let files = this.files;
+        if (files.length > 0) {
+            showLoaderFullScreen("Uploading & Processing Resumes. Please wait ...");
+            let uploadPromises = [];
+
+            for (let i = 0; i < files.length; i++) {
+                let formData = new FormData();
+                formData.append("file", files[i]);
+                formData.append("model", selectedModel);
+
+                let uploadPromise = fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast(`File ${files[i].name} uploaded successfully.`, "success");
+                })
+                .catch(error => {
+                    showToast(`File ${files[i].name} upload failed.`, "error");
+                });
+
+                uploadPromises.push(uploadPromise);
+            }
+
+            Promise.all(uploadPromises).then(() => {
+                document.querySelector('[data-bs-target="#resumesModal"]').click();
+                hideLoaderFullScreen();
+            });
+        }
+    });
+
+    function showToast(message, type) {
+        let toastContainer = document.getElementById("toastContainer");
+        let toast = document.createElement("div");
+        let bgColor = type === "success" ? "bg-success" : "bg-danger";
+        toast.className = `toast align-items-center text-white ${bgColor} border-0`;
+        toast.role = "alert";
+        toast.ariaLive = "assertive";
+        toast.ariaAtomic = "true";
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+        let bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    }
+
+
+    function refreshPage() {
+        location.reload();
+    }
+
+    
+    let selectedModel = document.getElementById('modelSelect').selectedOptions[0].innerText;
+
+    document.getElementById("modelSelect").addEventListener("change", function () {
+        selectedModel = document.getElementById('modelSelect').selectedOptions[0].innerText;
+        localStorage.setItem('selectedModel', selectedModel);
+    });
+
+    window.addEventListener("load", function () {
+        let storedModel = localStorage.getItem('selectedModel');
+        if (storedModel) {
+            let modelSelect = document.getElementById('modelSelect');
+            for (let i = 0; i < modelSelect.options.length; i++) {
+                if (modelSelect.options[i].innerText === storedModel) {
+                    modelSelect.selectedIndex = i;
+                    modelSelect.options[i].selected = true;
+                    selectedModel = storedModel;
+                    break;
+                }
+            }
+        } else {
+            
+            localStorage.setItem('selectedModel', storedModel);
+        }
+    });
+
+
+    document.getElementById("userInput").addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        let input = document.getElementById("userInput");
+        let chatBox = document.getElementById("chatBox");
+
+        if (input.value.trim() !== "") {
+            let userMessage = document.createElement("div");
+            userMessage.className = "message user-message";
+            userMessage.textContent = input.value;
+            chatBox.appendChild(userMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            let spinner = document.createElement("div");
+            spinner.className = "spinner-grow text-primary";
+            spinner.role = "status";
+            spinner.innerHTML = `<span class="visually-hidden">Loading...</span>`;
+            chatBox.appendChild(spinner);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            fetch(`/api/execute-query?prompt=${encodeURIComponent(input.value)}&model=${encodeURIComponent(selectedModel)}`)
+                .then(response => response.text())
+                .then(data => {
+                    chatBox.removeChild(spinner);
+                    let botMessage = document.createElement("div");
+                    botMessage.className = "message bot-message";
+                    botMessage.innerHTML = data;
+                    chatBox.appendChild(botMessage);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch(error => {
+                    chatBox.removeChild(spinner);
+                    let botMessage = document.createElement("div");
+                    botMessage.className = "message bot-message";
+                    botMessage.textContent = "Error: Unable to get response.";
+                    chatBox.appendChild(botMessage);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                });
+
+            input.value = "";
+        }
+    }
+
+</script>
+
+</body>
+</html>
