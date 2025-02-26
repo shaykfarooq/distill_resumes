@@ -32,7 +32,7 @@ The CV Analysis System is a powerful tool designed to process multiple CV docume
 ### 1. Clone the Repository
 ```sh
 $ git clone <your-repository-url>
-$ cd 
+$ cd distill_resumes
 ```
 
 ### 2. Create a Conda Environment
